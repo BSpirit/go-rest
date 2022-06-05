@@ -1,13 +1,29 @@
 package core
 
 import (
+	"encoding/json"
 	"net/http"
 	"strconv"
 
 	"github.com/go-chi/chi"
 )
 
-func NewRouter(service Service) http.Handler {
+func decode[T any](r *http.Request) (interface{}, error) {
+	var resource T
+	if err := json.NewDecoder(r.Body).Decode(&resource); err != nil {
+		return nil, err
+	}
+	return resource, nil
+
+}
+
+func encode(w http.ResponseWriter, statusCode int, resource interface{}) error {
+	w.Header().Add("Content-Type", "application/json")
+	w.WriteHeader(statusCode)
+	return json.NewEncoder(w).Encode(resource)
+}
+
+func NewRouter[T any](dao DAO) http.Handler {
 	r := chi.NewRouter()
 
 	r.Method("GET", "/{id}", Handler(func(w http.ResponseWriter, r *http.Request) *StatusError {
@@ -17,12 +33,12 @@ func NewRouter(service Service) http.Handler {
 			return &StatusError{Code: 400, Err: Trace(err)}
 		}
 
-		ressource, err := service.DAO().Get(id)
+		resource, err := dao.Get(id)
 		if err != nil {
 			return &StatusError{Code: 404, Err: Trace(err)}
 		}
 
-		err = service.Serializer().Encode(w, http.StatusOK, ressource)
+		err = encode(w, http.StatusOK, resource)
 		if err != nil {
 			return &StatusError{Code: 500, Err: Trace(err)}
 		}
@@ -31,12 +47,12 @@ func NewRouter(service Service) http.Handler {
 	}))
 
 	r.Method("GET", "/", Handler(func(w http.ResponseWriter, r *http.Request) *StatusError {
-		ressource, err := service.DAO().GetAll()
+		resource, err := dao.GetAll()
 		if err != nil {
 			return &StatusError{Code: 500, Err: Trace(err)}
 		}
 
-		err = service.Serializer().Encode(w, http.StatusOK, ressource)
+		err = encode(w, http.StatusOK, resource)
 		if err != nil {
 			return &StatusError{Code: 500, Err: Trace(err)}
 		}
@@ -45,17 +61,17 @@ func NewRouter(service Service) http.Handler {
 	}))
 
 	r.Method("POST", "/", Handler(func(w http.ResponseWriter, r *http.Request) *StatusError {
-		ressource, err := service.Serializer().Decode(r)
+		resource, err := decode[T](r)
 		if err != nil {
 			return &StatusError{Code: 400, Err: Trace(err)}
 		}
 
-		ressource, err = service.DAO().Create(ressource)
+		resource, err = dao.Create(resource)
 		if err != nil {
 			return &StatusError{Code: 500, Err: Trace(err)}
 		}
 
-		err = service.Serializer().Encode(w, http.StatusCreated, ressource)
+		err = encode(w, http.StatusCreated, resource)
 		if err != nil {
 			return &StatusError{Code: 500, Err: Trace(err)}
 		}
@@ -70,22 +86,22 @@ func NewRouter(service Service) http.Handler {
 			return &StatusError{Code: 400, Err: Trace(err)}
 		}
 
-		_, err = service.DAO().Get(id)
+		_, err = dao.Get(id)
 		if err != nil {
 			return &StatusError{Code: 404, Err: Trace(err)}
 		}
 
-		ressource, err := service.Serializer().Decode(r)
+		resource, err := decode[T](r)
 		if err != nil {
 			return &StatusError{Code: 400, Err: Trace(err)}
 		}
 
-		err = service.DAO().Update(id, ressource)
+		err = dao.Update(id, resource)
 		if err != nil {
 			return &StatusError{Code: 500, Err: Trace(err)}
 		}
 
-		err = service.Serializer().Encode(w, http.StatusOK, ressource)
+		err = encode(w, http.StatusOK, resource)
 		if err != nil {
 			return &StatusError{Code: 500, Err: Trace(err)}
 		}
@@ -100,12 +116,12 @@ func NewRouter(service Service) http.Handler {
 			return &StatusError{Code: 400, Err: Trace(err)}
 		}
 
-		_, err = service.DAO().Get(id)
+		_, err = dao.Get(id)
 		if err != nil {
 			return &StatusError{Code: 404, Err: Trace(err)}
 		}
 
-		err = service.DAO().Delete(id)
+		err = dao.Delete(id)
 		if err != nil {
 			return &StatusError{Code: 500, Err: Trace(err)}
 		}

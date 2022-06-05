@@ -1,6 +1,6 @@
 module go-rest
 
-go 1.13
+go 1.18
 
 require (
 	github.com/go-chi/chi v4.0.3+incompatible

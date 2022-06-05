@@ -36,8 +36,8 @@ func (dao UserDAO) GetAll() (interface{}, error) {
 	return users, nil
 }
 
-func (dao UserDAO) Create(ressource interface{}) (interface{}, error) {
-	user := ressource.(User)
+func (dao UserDAO) Create(resource interface{}) (interface{}, error) {
+	user := resource.(User)
 	res, err := dao.DB.Exec("INSERT INTO users(username, age) VALUES(?, ?)", user.Username, user.Age)
 	if err != nil {
 		return nil, core.Trace(err)
@@ -52,8 +52,8 @@ func (dao UserDAO) Create(ressource interface{}) (interface{}, error) {
 	return user, nil
 }
 
-func (dao UserDAO) Update(id int64, ressource interface{}) error {
-	user := ressource.(User)
+func (dao UserDAO) Update(id int64, resource interface{}) error {
+	user := resource.(User)
 	_, err := dao.DB.Exec("UPDATE users SET username=?, age=? WHERE id=?", user.Username, user.Age, id)
 	if err != nil {
 		return core.Trace(err)

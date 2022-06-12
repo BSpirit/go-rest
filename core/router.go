@@ -23,7 +23,7 @@ func encode(w http.ResponseWriter, statusCode int, resource interface{}) error {
 	return json.NewEncoder(w).Encode(resource)
 }
 
-func NewRouter[T any](dao DAO) http.Handler {
+func NewRouter[T any](dao DAO[T]) http.Handler {
 	r := chi.NewRouter()
 
 	r.Method("GET", "/{id}", Handler(func(w http.ResponseWriter, r *http.Request) *StatusError {
@@ -66,7 +66,7 @@ func NewRouter[T any](dao DAO) http.Handler {
 			return &StatusError{Code: 400, Err: Trace(err)}
 		}
 
-		resource, err = dao.Create(resource)
+		resource, err = dao.Create(resource.(T))
 		if err != nil {
 			return &StatusError{Code: 500, Err: Trace(err)}
 		}
@@ -96,7 +96,7 @@ func NewRouter[T any](dao DAO) http.Handler {
 			return &StatusError{Code: 400, Err: Trace(err)}
 		}
 
-		err = dao.Update(id, resource)
+		err = dao.Update(id, resource.(T))
 		if err != nil {
 			return &StatusError{Code: 500, Err: Trace(err)}
 		}

@@ -8,6 +8,6 @@ import (
 )
 
 func MountUserRouter(r *chi.Mux, db *sqlx.DB) {
-	userDAO := UserDAO{DB: db}
-	r.Mount("/users", core.NewRouter[User](userDAO))
+	var userDAO core.DAO[User] = UserDAO{DB: db}
+	r.Mount("/users", core.NewRouter(userDAO))
 }

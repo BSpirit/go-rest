@@ -16,8 +16,8 @@ type UserDAO struct {
 	DB *sqlx.DB
 }
 
-func (dao UserDAO) Get(id int64) (interface{}, error) {
-	user := User{}
+func (dao UserDAO) Get(id int64) (*User, error) {
+	user := &User{}
 	err := dao.DB.Get(&user, "SELECT * FROM users WHERE id = ?", id)
 	if err != nil {
 		return nil, core.Trace(err)
@@ -26,7 +26,7 @@ func (dao UserDAO) Get(id int64) (interface{}, error) {
 	return user, nil
 }
 
-func (dao UserDAO) GetAll() (interface{}, error) {
+func (dao UserDAO) GetAll() ([]User, error) {
 	users := []User{}
 	err := dao.DB.Select(&users, "SELECT * FROM users")
 	if err != nil {
@@ -36,9 +36,8 @@ func (dao UserDAO) GetAll() (interface{}, error) {
 	return users, nil
 }
 
-func (dao UserDAO) Create(resource interface{}) (interface{}, error) {
-	user := resource.(User)
-	res, err := dao.DB.Exec("INSERT INTO users(username, age) VALUES(?, ?)", user.Username, user.Age)
+func (dao UserDAO) Create(resource User) (*User, error) {
+	res, err := dao.DB.Exec("INSERT INTO users(username, age) VALUES(?, ?)", resource.Username, resource.Age)
 	if err != nil {
 		return nil, core.Trace(err)
 	}
@@ -47,14 +46,13 @@ func (dao UserDAO) Create(resource interface{}) (interface{}, error) {
 	if err != nil {
 		return nil, core.Trace(err)
 	}
-	user.ID = id
+	resource.ID = id
 
-	return user, nil
+	return &resource, nil
 }
 
-func (dao UserDAO) Update(id int64, resource interface{}) error {
-	user := resource.(User)
-	_, err := dao.DB.Exec("UPDATE users SET username=?, age=? WHERE id=?", user.Username, user.Age, id)
+func (dao UserDAO) Update(id int64, resource User) error {
+	_, err := dao.DB.Exec("UPDATE users SET username=?, age=? WHERE id=?", resource.Username, resource.Age, id)
 	if err != nil {
 		return core.Trace(err)
 	}

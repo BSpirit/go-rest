@@ -8,16 +8,16 @@ import (
 	"github.com/go-chi/chi"
 )
 
-func decode[T any](r *http.Request) (interface{}, error) {
+func decode[T any](r *http.Request) (*T, error) {
 	var resource T
 	if err := json.NewDecoder(r.Body).Decode(&resource); err != nil {
 		return nil, err
 	}
-	return resource, nil
+	return &resource, nil
 
 }
 
-func encode(w http.ResponseWriter, statusCode int, resource interface{}) error {
+func encode[T any](w http.ResponseWriter, statusCode int, resource T) error {
 	w.Header().Add("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
 	return json.NewEncoder(w).Encode(resource)
@@ -66,7 +66,7 @@ func NewRouter[T any](dao DAO[T]) http.Handler {
 			return &StatusError{Code: 400, Err: Trace(err)}
 		}
 
-		resource, err = dao.Create(resource.(T))
+		resource, err = dao.Create(*resource)
 		if err != nil {
 			return &StatusError{Code: 500, Err: Trace(err)}
 		}
@@ -96,7 +96,7 @@ func NewRouter[T any](dao DAO[T]) http.Handler {
 			return &StatusError{Code: 400, Err: Trace(err)}
 		}
 
-		err = dao.Update(id, resource.(T))
+		err = dao.Update(id, *resource)
 		if err != nil {
 			return &StatusError{Code: 500, Err: Trace(err)}
 		}
